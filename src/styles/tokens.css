@@ -1,0 +1,234 @@
+/* ------------------------------------------------------------------ */
+/*  LIVRE DESIGN SYSTEM — DESIGN TOKENS (Phase 1)                     */
+/*  Bohemian Editorial · Literary · Tactile · Accessible             */
+/* ------------------------------------------------------------------ */
+
+:root {
+  /* ================================================================ */
+  /*  1. COLOR SYSTEM (Semantic & Bohemian Editorial Palette)          */
+  /* ================================================================ */
+
+  /* Neutral Surface Grounds */
+  --color-bg:               #F2EDE3; /* Warm parchment ground */
+  --color-bg-subtle:        #FAF7F2; /* Cream wash */
+  --color-surface:          #FBF7EF; /* Warm ivory for cards, dialogs, pages */
+  --color-surface-raised:   #FFFFFF; /* Elevated white surface */
+  --color-surface-sunken:   #EAE3D6; /* Recessed gutter / track */
+  --color-surface-hover:    #F5EFE3; /* Interactive hover tint */
+
+  /* Ink & Typography Colors */
+  --color-text-primary:     #332820; /* Deep espresso ink (11.2:1 on parchment, AAA) */
+  --color-text-secondary:   #5C4A3E; /* Muted espresso (6.5:1 on ivory, AA) */
+  --color-text-muted:       #7A685A; /* Subtle editorial caption (4.6:1, AA) */
+  --color-text-faint:       #998779; /* Decorative text / non-essential meta */
+  --color-text-inverse:     #FFFDF9; /* Light text on dark cloth / buttons */
+
+  /* Brand Editorial Accents */
+  --color-forest:           #1B382B; /* Deep botanical forest */
+  --color-forest-hover:     #2D4B39; /* Mid pine */
+  --color-forest-light:     #E3ECE2; /* Sage tint */
+
+  --color-olive:            #737B5D; /* Muted editorial olive */
+  --color-olive-dark:       #575E45; /* Dark olive for high-contrast text */
+  --color-olive-light:      #E8EBDD; /* Soft olive wash */
+  --color-olive-wash:       rgba(115, 123, 93, 0.12);
+
+  --color-terracotta:       #B76549; /* Literary terracotta accent */
+  --color-terracotta-dark:  #964E36; /* Dark terracotta */
+  --color-terracotta-light: #FBEFEA; /* Light terracotta wash */
+  --color-terracotta-soft:  rgba(183, 101, 73, 0.14);
+
+  --color-brass:            #B59A62; /* Antique brass reading accessory */
+  --color-brass-dark:       #8C733E; /* Aged brass border */
+  --color-brass-light:      #FDF9EE; /* Pale brass sheen */
+  --color-brass-wash:       rgba(181, 154, 98, 0.14);
+
+  /* Structural Borders & Rules */
+  --color-border:           #D9D0C2; /* Fine bookbinding structure */
+  --color-border-subtle:    rgba(51, 40, 32, 0.08); /* Faint rule */
+  --color-border-strong:    #C2B7A3; /* Emphasized frame */
+  --color-divider:          rgba(51, 40, 32, 0.10); /* Section divider */
+
+  /* Functional Status & Feedback */
+  --color-error:            #A8321B; /* Clear editorial crimson */
+  --color-error-bg:         #FBF0ED; /* Error banner ground */
+  --color-error-border:     #E8A99B;
+  --color-success:          #2A6945; /* Botanical green check */
+  --color-success-bg:       #EDF5EF;
+  --color-success-border:   #A3CCA8;
+  --color-focus:            #B76549; /* High-visibility keyboard focus outline */
+
+  /* ================================================================ */
+  /*  BACKWARD-COMPATIBILITY ALIASES                                 */
+  /* ================================================================ */
+  --parchment:              var(--color-bg);
+  --warm-ivory:             var(--color-surface);
+  --espresso:               var(--color-text-primary);
+  --espresso-soft:          var(--color-text-secondary);
+  --espresso-faint:         var(--color-text-muted);
+  --olive:                  var(--color-olive);
+  --olive-light:            var(--color-olive-light);
+  --olive-dark:             var(--color-olive-dark);
+  --terracotta:             var(--color-terracotta);
+  --terracotta-soft:        var(--color-terracotta-soft);
+  --antique-brass:          var(--color-brass);
+  --antique-brass-light:    var(--color-brass-light);
+  --antique-brass-dark:     var(--color-brass-dark);
+  --muted-border:           var(--color-border);
+  --muted-border-soft:      rgba(217, 208, 194, 0.5);
+
+  --paper-ground:           var(--color-bg-subtle);
+  --cream:                  var(--color-bg-subtle);
+  --cream-dark:             #F0EBE3;
+  --cream-darker:           #E4DDD1;
+  --cream-wash:             #FDFCF9;
+  --ink:                    var(--color-text-primary);
+  --ink-soft:               var(--color-text-secondary);
+  --ink-faint:              var(--color-text-muted);
+  --hairline:               var(--color-border-subtle);
+  --hairline-subtle:        rgba(43, 35, 29, 0.05);
+
+  --livre-bg:               #FBF8F3;
+  --livre-green:            var(--color-forest);
+  --livre-green-mid:        var(--color-forest-hover);
+  --livre-green-soft:       #4A6356;
+  --livre-green-faint:      #7C9587;
+  --livre-terracotta:       #C86D51;
+  --livre-terracotta-dark:  var(--color-terracotta-dark);
+  --livre-terracotta-subtle: rgba(200, 109, 81, 0.15);
+  --livre-sage:             var(--color-forest-light);
+  --livre-sage-border:      #9EBAA1;
+  --livre-sand:             #EFE8DC;
+  --livre-ivory:            #FFFDF9;
+  --livre-divider:          var(--color-divider);
+
+  /* ================================================================ */
+  /*  2. TYPOGRAPHY TOKENS                                            */
+  /* ================================================================ */
+  --font-serif:             'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-display:           'Instrument Serif', Georgia, serif;
+  --font-sans:              -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:              ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Fluid Type Scale (clamp-based from 360px mobile to 1440px desktop) */
+  --text-xs:                clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);   /* 11px -> 12px */
+  --text-sm:                clamp(0.8125rem, 0.77rem + 0.2vw, 0.875rem);   /* 13px -> 14px */
+  --text-base:              clamp(0.9375rem, 0.88rem + 0.25vw, 1rem);      /* 15px -> 16px */
+  --text-md:                clamp(1.0625rem, 1rem + 0.3vw, 1.125rem);      /* 17px -> 18px */
+  --text-lg:                clamp(1.1875rem, 1.1rem + 0.4vw, 1.3125rem);   /* 19px -> 21px */
+  --text-xl:                clamp(1.375rem, 1.25rem + 0.6vw, 1.625rem);    /* 22px -> 26px */
+  --text-2xl:               clamp(1.625rem, 1.45rem + 0.9vw, 2.125rem);    /* 26px -> 34px */
+  --text-3xl:               clamp(2rem, 1.7rem + 1.5vw, 2.75rem);          /* 32px -> 44px */
+  --text-4xl:               clamp(2.5rem, 2.1rem + 2vw, 3.75rem);          /* 40px -> 60px */
+  --text-display:           clamp(3rem, 2.5rem + 2.8vw, 4.75rem);          /* 48px -> 76px */
+
+  /* Line Heights */
+  --leading-none:           1.0;
+  --leading-tight:          1.2;
+  --leading-snug:           1.35;
+  --leading-normal:         1.55;
+  --leading-relaxed:        1.75;
+
+  /* Letter Spacing */
+  --tracking-tighter:       -0.03em;
+  --tracking-tight:         -0.015em;
+  --tracking-normal:        0em;
+  --tracking-wide:          0.025em;
+  --tracking-wider:         0.05em;
+  --tracking-caps:          0.08em;
+
+  /* ================================================================ */
+  /*  3. SPACING & LAYOUT SCALE                                       */
+  /* ================================================================ */
+  --space-3xs:              2px;
+  --space-2xs:              4px;
+  --space-xs:               8px;
+  --space-sm:               12px;
+  --space-md:               16px;
+  --space-lg:               20px;
+  --space-xl:               24px;
+  --space-2xl:              32px;
+  --space-3xl:              40px;
+  --space-4xl:              48px;
+  --space-5xl:              64px;
+  --space-6xl:              80px;
+  --space-7xl:              96px;
+
+  /* Fluid Page Padding */
+  --page-padding-x:         clamp(1rem, 0.6rem + 2vw, 3rem);
+  --page-padding-y:         clamp(1.25rem, 0.8rem + 1.8vw, 2.5rem);
+  --container-max-width:    1280px;
+  --reading-stage-max-w:    1400px;
+
+  /* ================================================================ */
+  /*  4. BORDER RADIUS (Concentric Hierarchy: outer = inner + padding) */
+  /* ================================================================ */
+  --radius-xs:              3px;
+  --radius-sm:              5px;
+  --radius-md:              8px;
+  --radius-lg:              12px;
+  --radius-xl:              16px;
+  --radius-2xl:             24px;
+  --radius-full:            9999px;
+
+  /* ================================================================ */
+  /*  5. ELEVATION & SHADOWS                                          */
+  /*  (Layered ambient + key shadows with high-contrast fallbacks)     */
+  /* ================================================================ */
+  --shadow-xs:              0 1px 2px rgba(51, 40, 32, 0.05);
+  --shadow-sm:              0 1px 3px rgba(51, 40, 32, 0.06), 0 1px 2px rgba(51, 40, 32, 0.03);
+  --shadow-md:              0 4px 12px rgba(51, 40, 32, 0.08), 0 1px 3px rgba(51, 40, 32, 0.04);
+  --shadow-lg:              0 10px 24px rgba(51, 40, 32, 0.10), 0 2px 6px rgba(51, 40, 32, 0.04);
+  --shadow-book:            0 18px 48px rgba(51, 40, 32, 0.13), 0 4px 12px rgba(51, 40, 32, 0.06);
+  --shadow-popover:         0 14px 36px rgba(51, 40, 32, 0.14), 0 3px 8px rgba(51, 40, 32, 0.05);
+  --shadow-drawer:          -8px 0 28px rgba(51, 40, 32, 0.12), -2px 0 6px rgba(51, 40, 32, 0.04);
+
+  /* ================================================================ */
+  /*  6. MOTION & ANIMATION (12 Principles & Motion Skill Rules)       */
+  /* ================================================================ */
+  --duration-instant:       0ms;
+  --duration-fast:          120ms;  /* Press, micro-toggles */
+  --duration-normal:        200ms;  /* Standard UI transitions */
+  --duration-medium:        280ms;  /* Popovers, cards, drawers */
+  --duration-drawer:        340ms;  /* Full side panels */
+
+  /* Easing Curves */
+  --ease-enter:             cubic-bezier(0.23, 1, 0.32, 1);     /* Smooth deceleration into rest */
+  --ease-exit:              cubic-bezier(0.4, 0, 1, 1);         /* Rapid acceleration away (faster than enter) */
+  --ease-move:              cubic-bezier(0.77, 0, 0.175, 1);    /* S-curve for on-screen travel */
+  --ease-spring:            cubic-bezier(0.175, 0.885, 0.32, 1.15); /* Light tactile settle */
+
+  /* Standard Composed Transitions */
+  --transition-fast:        opacity 120ms var(--ease-enter), transform 120ms var(--ease-enter);
+  --transition-normal:      opacity 200ms var(--ease-enter), transform 200ms var(--ease-enter), border-color 200ms var(--ease-enter), background-color 200ms var(--ease-enter);
+  --transition-drawer:      transform 320ms var(--ease-enter), opacity 320ms var(--ease-enter);
+
+  /* ================================================================ */
+  /*  7. Z-INDEX SCALE                                                */
+  /* ================================================================ */
+  --z-base:                 1;
+  --z-raised:               10;
+  --z-nav:                  50;
+  --z-sticky:               100;
+  --z-drawer:               500;
+  --z-drawer-backdrop:      490;
+  --z-modal:                1000;
+  --z-modal-backdrop:       990;
+  --z-popover:              1200;
+  --z-tooltip:              1300;
+
+  /* ================================================================ */
+  /*  8. ACCESSIBILITY & INTERACTION CONSTANTS                        */
+  /* ================================================================ */
+  --touch-target-min:       44px; /* Minimum touch target (WCAG 2.5.5) */
+  --focus-ring-width:       2px;
+  --focus-ring-offset:      2px;
+  --focus-ring:             0 0 0 var(--focus-ring-offset) var(--color-surface), 0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--color-focus);
+}
+
+/* Forced Colors (High Contrast) Accessibility Fallbacks */
+@media (forced-colors: active) {
+  :root {
+    --color-focus: Highlight;
+  }
+}

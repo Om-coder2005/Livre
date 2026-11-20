@@ -1,0 +1,1551 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Livre — Interactive Book</title>
+  <style>
+    @font-face {
+      font-family: 'Instrument Serif';
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src: url('./meng-to-sketchbook/instrument-serif-normal.woff2') format('woff2');
+    }
+
+    @font-face {
+      font-family: 'Instrument Serif';
+      font-style: italic;
+      font-weight: 400;
+      font-display: block;
+      src: url('./meng-to-sketchbook/instrument-serif-italic.woff2') format('woff2');
+    }
+
+    @font-face {
+      font-family: 'Newsreader';
+      font-style: normal;
+      font-weight: 200 600;
+      font-display: swap;
+      src: url('./meng-to-sketchbook/newsreader.woff2') format('woff2');
+    }
+
+    :root {
+      --paper: #F2EDE3;
+      --cream-dark: #E6DFD2;
+      --ink: #332820;
+      --ink-soft: rgba(51, 40, 32, .68);
+      --ink-faint: rgba(51, 40, 32, .40);
+      --hairline: rgba(51, 40, 32, .14);
+      --antique-brass: #B59A62;
+      --olive: #737B5D;
+      --terracotta: #B76549;
+      --muted-border: #D9D0C2;
+      --display: 'Instrument Serif', Georgia, serif;
+      --font: 'Newsreader', Georgia, serif;
+      --track-caps: .18em;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Background atmospheric wash matching Reference 2 */
+    .stage-wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(220, 212, 196, 0.45) 0%, transparent 45%),
+        radial-gradient(circle at 82% 80%, rgba(225, 215, 198, 0.40) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, #FAF5EC 0%, #F2EDE3 58%, #E5DCCF 100%);
+    }
+
+    /* Ambient Botanical Watermarks matching Reference 2 */
+    .sb-botanical {
+      position: absolute;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+      filter: blur(0.2px);
+    }
+
+    .sb-botanical.top-left {
+      top: -8px;
+      left: -8px;
+    }
+
+    .sb-botanical.top-right {
+      top: -8px;
+      right: -8px;
+    }
+
+    .sb-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      padding: 10px 16px;
+      box-sizing: border-box;
+      touch-action: pan-y;
+      z-index: 1;
+    }
+
+    /* Arrow controls */
+    .sb-arrow {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 14px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-faint);
+      cursor: pointer;
+      transition: color .2s, opacity .2s;
+      -webkit-tap-highlight-color: transparent;
+      z-index: 15;
+    }
+
+    .sb-arrow:hover:not(:disabled) {
+      color: var(--ink);
+    }
+
+    .sb-arrow:disabled {
+      opacity: 0.15;
+      cursor: default;
+    }
+
+    /* The 3D container — Authentic Physical Book Proportions (Reference 2) */
+    .sb-3d {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Constrained strictly so book never widens or stretches; scales comfortably on large displays */
+      width: min(1280px, calc(100vw - 110px), calc((100vh - 84px) * (1760 / 1240)));
+      aspect-ratio: 1760 / 1240;
+      perspective: 2200px;
+      perspective-origin: 50% 48%;
+      margin: auto;
+      transition: width 0.18s ease;
+      --paper-base: #FFFFFF;
+    }
+
+    .sb-tilt {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--zoom, 1));
+      will-change: transform;
+    }
+
+    .sb-book {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 1760 / 1240;
+      transform-style: preserve-3d;
+      z-index: 2;
+      border-radius: 12px 16px 16px 12px;
+    }
+
+    /* Natural Inner Spine Gutter & Page Depth Overlay */
+    .sb-depth-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 12;
+      overflow: hidden;
+    }
+
+    .stage-wrap.is-mobile .sb-depth-overlay {
+      display: none !important;
+    }
+
+    /* Central crevice line */
+    .sb-spine-crease {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      background: rgba(35, 25, 16, 0.45);
+      box-shadow: 0 0 1px rgba(24, 16, 10, 0.5);
+    }
+
+    /* Soft inner page gutter gradient - strictly bounded within page margins */
+    .sb-gutter-shadow {
+      position: absolute;
+      left: calc(50% - 36px);
+      width: 72px;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(
+        90deg,
+        rgba(44, 32, 18, 0) 0%,
+        rgba(44, 32, 18, 0.05) 30%,
+        rgba(44, 32, 18, 0.18) 47%,
+        rgba(28, 20, 10, 0.35) 50%,
+        rgba(44, 32, 18, 0.18) 53%,
+        rgba(44, 32, 18, 0.05) 70%,
+        rgba(44, 32, 18, 0) 100%
+      );
+      mix-blend-mode: multiply;
+      opacity: calc(1 - var(--shade, 0) * 0.4);
+    }
+
+    /* Subtle reading light highlights where curved pages rise toward the viewer */
+    .sb-page-highlight.left {
+      position: absolute;
+      right: 50%;
+      width: 60px;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(270deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    .sb-page-highlight.right {
+      position: absolute;
+      left: 50%;
+      width: 60px;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+      pointer-events: none;
+    }
+
+    /* Realistic Multi-Layer Physical Ambient & Contact Shadows matching Reference 2 */
+    .sb-cast {
+      position: absolute;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .sb-cast.ambient {
+      left: -3%;
+      right: -3%;
+      top: 6%;
+      bottom: -5%;
+      background: radial-gradient(
+        50% 50% at 50% 52%,
+        rgba(45, 34, 24, 0.22) 0%,
+        rgba(45, 34, 24, 0.10) 50%,
+        transparent 76%
+      );
+      filter: blur(32px);
+      opacity: calc(1 - var(--shade, 0) * 0.35);
+    }
+
+    .sb-cast.contact {
+      left: 1%;
+      right: 1%;
+      top: 35%;
+      bottom: -3%;
+      background: radial-gradient(
+        50% 48% at 50% 54%,
+        rgba(32, 22, 12, 0.38) 0%,
+        rgba(32, 22, 12, 0.18) 52%,
+        transparent 80%
+      );
+      filter: blur(14px);
+      opacity: calc(1 - var(--shade, 0) * 0.45);
+    }
+
+    .sb-cast.hair {
+      left: 6%;
+      right: 6%;
+      top: 72%;
+      bottom: -2%;
+      background: radial-gradient(
+        50% 50% at 50% 50%,
+        rgba(24, 15, 8, 0.45) 0%,
+        transparent 72%
+      );
+      filter: blur(6px);
+      opacity: calc(1 - var(--shade, 0) * 0.6);
+    }
+
+    .sb-cast.corner-left {
+      position: absolute;
+      left: -2%;
+      bottom: -3%;
+      width: 28%;
+      height: 22%;
+      background: radial-gradient(ellipse at 25% 75%, rgba(45, 34, 24, 0.20) 0%, transparent 72%);
+      filter: blur(14px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .sb-cast.corner-right {
+      position: absolute;
+      right: -2%;
+      bottom: -3%;
+      width: 28%;
+      height: 22%;
+      background: radial-gradient(ellipse at 75% 75%, rgba(45, 34, 24, 0.20) 0%, transparent 72%);
+      filter: blur(14px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .sb-full {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px 16px 16px 12px;
+      overflow: hidden;
+      background: var(--paper-base, #FFFFFF);
+    }
+
+    .sb-full img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 12px 16px 16px 12px;
+    }
+
+    .sb-half {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      overflow-x: clip;
+      overflow-y: visible;
+      background: var(--paper-base, #FFFFFF);
+    }
+
+    .sb-half.left {
+      left: 0;
+      border-radius: 12px 0 0 12px;
+      overflow: hidden;
+    }
+
+    .sb-half.right {
+      left: 50%;
+      border-radius: 0 16px 16px 0;
+      overflow: hidden;
+    }
+
+    .sb-half-img {
+      width: 200%;
+      max-width: none;
+      height: 100%;
+      object-fit: fill;
+      display: block;
+    }
+
+    .sb-half-img.left {
+      border-radius: 12px 0 0 12px;
+    }
+
+    .sb-half-img.right {
+      margin-left: -100%;
+      border-radius: 0 16px 16px 0;
+    }
+
+    /* Gutter shading */
+    .gutter-shade {
+      position: absolute;
+      top: var(--pg, 3.2%);
+      bottom: var(--pg, 3.2%);
+      width: 44%;
+      pointer-events: none;
+      opacity: calc(var(--shade, 0) * .62);
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+      mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+    }
+
+    .gutter-shade.left {
+      right: 0;
+      background: linear-gradient(270deg, rgba(52, 38, 20, .30), rgba(52, 38, 20, 0) 82%);
+    }
+
+    .gutter-shade.right {
+      left: 0;
+      background: linear-gradient(90deg, rgba(52, 38, 20, .24), rgba(52, 38, 20, 0) 82%);
+    }
+
+    /* ---- 18-Strip Curved Page Curl ---- */
+    .curl {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: calc(var(--bw, 0px) * var(--span));
+      transform-style: preserve-3d;
+      z-index: 6;
+    }
+
+    .curl.next {
+      left: 50%;
+      transform-origin: left center;
+      transform: rotateY(calc(-1 * var(--tt, 0deg)));
+    }
+
+    .curl.prev {
+      right: 50%;
+      transform-origin: right center;
+      transform: rotateY(var(--tt, 0deg));
+    }
+
+    .strip {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: calc(var(--bw, 0px) * var(--span) / var(--n));
+      transform-style: preserve-3d;
+    }
+
+    .curl.next .strip {
+      transform-origin: left center;
+    }
+
+    .curl.prev .strip {
+      transform-origin: right center;
+    }
+
+    .curl.next>.strip {
+      left: 0;
+    }
+
+    .curl.prev>.strip {
+      right: 0;
+      left: auto;
+    }
+
+    .curl.next .strip .strip {
+      left: 100%;
+      transform: rotateY(var(--td, 0deg));
+    }
+
+    .curl.prev .strip .strip {
+      right: 100%;
+      transform: rotateY(calc(-1 * var(--td, 0deg)));
+    }
+
+    .face {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: -1.1px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      background-repeat: no-repeat;
+      background-size: var(--bw, 0px) 100%;
+      background-color: var(--paper-base, #FFFFFF);
+    }
+
+    .face.back {
+      transform: rotateY(180deg);
+    }
+
+    .face .sh,
+    .face .gl {
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+      mask-image: linear-gradient(180deg, transparent 0, #000 5.2%, #000 94.8%, transparent 100%);
+    }
+
+    .strip.edge .face .sh,
+    .strip.edge .face .gl {
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%), var(--hf);
+      mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 91%, transparent 100%), var(--hf);
+      -webkit-mask-composite: source-in;
+      mask-composite: intersect;
+    }
+
+    .curl.next .strip.edge .face.front,
+    .curl.prev .strip.edge .face.back {
+      --hf: linear-gradient(90deg, #000 0 22%, transparent 96%);
+    }
+
+    .curl.next .strip.edge .face.back,
+    .curl.prev .strip.edge .face.front {
+      --hf: linear-gradient(270deg, #000 0 22%, transparent 96%);
+    }
+
+    .curl.next .strip.edge .face.front {
+      border-top-right-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+
+    .curl.next .strip.edge .face.back {
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    .curl.prev .strip.edge .face.front {
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    .curl.prev .strip.edge .face.back {
+      border-top-right-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+
+    .face .sh {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--pg, 3.2%);
+      bottom: var(--pg, 3.2%);
+      pointer-events: none;
+    }
+
+    .curl.next .face.front .sh,
+    .curl.prev .face.back .sh {
+      background: linear-gradient(90deg, rgba(58, 43, 20, var(--a1, 0)), rgba(58, 43, 20, var(--a2, 0)));
+    }
+
+    .curl.next .face.back .sh,
+    .curl.prev .face.front .sh {
+      background: linear-gradient(90deg, rgba(58, 43, 20, var(--a2, 0)), rgba(58, 43, 20, var(--a1, 0)));
+    }
+
+    .face .gl {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--pg, 3.2%);
+      bottom: var(--pg, 3.2%);
+      pointer-events: none;
+      background: #fffaf0;
+      opacity: calc(var(--shade, 0) * var(--lit, 1) * var(--lit, 1) * .20);
+    }
+
+    /* ---- Loupe Magnifying Glass: Antique Brass & Walnut Instrument (Reference 2) ---- */
+    .loupe {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: var(--lr, 175px);
+      height: var(--lr, 175px);
+      pointer-events: none;
+      z-index: 80;
+      opacity: 0;
+      transition: opacity .25s ease;
+      will-change: transform;
+    }
+
+    .loupe.on {
+      opacity: 1;
+    }
+
+    .loupe.held .ring,
+    .loupe.held .grip {
+      cursor: grabbing;
+    }
+
+    .loupe .ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: auto;
+      cursor: grab;
+      padding: calc(var(--lr, 175px) * .058);
+      box-shadow:
+        0 2px 6px rgba(45, 34, 22, .26),
+        0 8px 22px rgba(45, 34, 22, .20),
+        0 20px 38px rgba(45, 34, 22, .14);
+    }
+
+    .loupe .ring:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      background: linear-gradient(142deg,
+          #FFF9EB 0%, #ECDDBA 14%, #C5A974 32%, #856C42 50%,
+          #D8C69B 66%, #FAF2DE 80%, #A48B57 100%);
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, .85),
+        inset 0 -2.5px 4px rgba(65, 48, 22, .55);
+      -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%, transparent 0 88.5%, #000 89.8% 100%);
+      mask-image: radial-gradient(circle closest-side at 50% 50%, transparent 0 88.5%, #000 89.8% 100%);
+    }
+
+    /* Turned hardwood handle with antique brass ferrule & finial */
+    .loupe .grip {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: calc(var(--lr, 175px) * .65);
+      height: calc(var(--lr, 175px) * .112);
+      transform-origin: 0 50%;
+      transform: rotate(45deg) translate(calc(var(--lr, 175px) * .36), -50%);
+      border-radius: calc(var(--lr, 175px) * .055);
+      pointer-events: auto;
+      cursor: grab;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .35) 0 16%, rgba(255, 255, 255, 0) 44%,
+          rgba(0, 0, 0, .36) 100%),
+        linear-gradient(90deg,
+          #DFCA93 0 14%,
+          #9E824A 14% 20%,
+          #3A2416 20% 86%,
+          #BA9E64 86% 93%,
+          #2B1A0E 93% 100%);
+      box-shadow: 2px 6px 14px rgba(45, 34, 22, .32), 0 12px 24px rgba(45, 34, 22, .16);
+    }
+
+    .lens {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow:
+        inset 0 0 0 1.5px rgba(65, 48, 22, .55),
+        inset 0 4px 14px rgba(45, 32, 16, .26),
+        inset 0 -8px 18px rgba(255, 252, 244, .16);
+    }
+
+    .zoomwrap {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 70;
+      opacity: 0;
+      border-radius: 12px 16px 16px 12px;
+    }
+
+    .zoominner {
+      position: absolute;
+      inset: 0;
+      transform-origin: 0 0;
+    }
+
+    .lens:before,
+    .lens:after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .lens:before {
+      z-index: 1;
+      background: radial-gradient(circle at 50% 50%,
+          rgba(0, 0, 0, 0) 56%, rgba(58, 44, 26, .08) 78%, rgba(46, 34, 16, .28) 100%);
+      box-shadow:
+        inset 0 0 0 2px rgba(130, 162, 196, .28),
+        inset 0 0 0 4px rgba(206, 158, 112, .18);
+    }
+
+    .lens:after {
+      z-index: 2;
+      background:
+        radial-gradient(36% 26% at 29% 19%, rgba(255, 255, 255, .32), rgba(255, 255, 255, 0) 76%),
+        radial-gradient(24% 16% at 74% 86%, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 80%),
+        linear-gradient(150deg, rgba(255, 255, 255, .08) 0 18%, rgba(255, 255, 255, 0) 42%);
+    }
+
+    /* Zone triggers */
+    .sb-zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border: 0;
+      background: transparent;
+      cursor: grab;
+      z-index: 30;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .sb-zone:active {
+      cursor: grabbing;
+    }
+
+    .sb-prev {
+      left: 0;
+      width: 50%;
+    }
+
+    .sb-next {
+      right: 0;
+      width: 50%;
+    }
+
+    /* Text Layer Overlay on Stationary Pages */
+    .text-layer-host {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+      user-select: text;
+      -webkit-user-select: text;
+      overflow: hidden;
+      border-radius: 12px 16px 16px 12px;
+      transition: opacity .15s ease;
+    }
+
+    .text-layer-host.hidden {
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .text-layer-inner {
+      position: absolute;
+      inset: 0;
+      line-height: 1;
+      opacity: 0.8;
+      pointer-events: auto;
+    }
+
+    .text-layer-inner span {
+      color: transparent !important;
+      position: absolute;
+      white-space: pre;
+      transform-origin: 0 0;
+      cursor: text;
+      pointer-events: auto;
+    }
+
+    .text-layer-inner ::selection {
+      background: rgba(184, 134, 78, 0.45);
+      color: transparent !important;
+    }
+
+    /* Page indicator caption — placed cleanly below book with ample breathing room */
+    .sb-caption-box {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      letter-spacing: var(--track-caps);
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      .sb-stage {
+        padding: 6px 8px;
+      }
+      .sb-3d {
+        width: min(calc(100vw - 48px), calc((100vh - 68px) * (1760 / 1240)));
+        aspect-ratio: 1760 / 1240;
+      }
+      .sb-arrow {
+        padding: 8px 4px;
+        z-index: 25;
+      }
+      .loupe {
+        --lr: 140px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .sb-stage {
+        padding: 4px;
+      }
+      .sb-3d {
+        width: min(calc(100vw - 20px), calc((100vh - 56px) * (1760 / 1240)));
+        aspect-ratio: 1760 / 1240;
+      }
+      .loupe {
+        --lr: 115px !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="stage-wrap" id="sbWrap">
+    <!-- Atmospheric Botanical Elements matching Reference 2 -->
+    <div class="sb-botanical top-left" aria-hidden="true">
+      <svg width="180" height="180" viewBox="0 0 100 100" fill="none">
+        <path d="M10,90 Q30,60 50,45 Q70,30 90,10" stroke="rgba(115, 123, 93, 0.35)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path d="M35,62 Q25,48 32,38 Q42,46 35,62 Z" fill="rgba(115, 123, 93, 0.22)" stroke="rgba(115, 123, 93, 0.32)" stroke-width="0.8"/>
+        <path d="M48,47 Q40,32 50,22 Q58,32 48,47 Z" fill="rgba(115, 123, 93, 0.22)" stroke="rgba(115, 123, 93, 0.32)" stroke-width="0.8"/>
+        <path d="M62,34 Q58,18 70,12 Q74,24 62,34 Z" fill="rgba(115, 123, 93, 0.20)" stroke="rgba(115, 123, 93, 0.30)" stroke-width="0.8"/>
+        <path d="M75,22 Q78,6 88,4 Q88,16 75,22 Z" fill="rgba(115, 123, 93, 0.18)" stroke="rgba(115, 123, 93, 0.28)" stroke-width="0.8"/>
+        <path d="M22,76 Q12,68 18,58 Q27,64 22,76 Z" fill="rgba(115, 123, 93, 0.18)" stroke="rgba(115, 123, 93, 0.28)" stroke-width="0.8"/>
+      </svg>
+    </div>
+    <div class="sb-botanical top-right" aria-hidden="true">
+      <svg width="180" height="180" viewBox="0 0 100 100" fill="none" style="transform: scaleX(-1);">
+        <path d="M10,90 Q30,60 50,45 Q70,30 90,10" stroke="rgba(115, 123, 93, 0.30)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path d="M35,62 Q25,48 32,38 Q42,46 35,62 Z" fill="rgba(115, 123, 93, 0.20)" stroke="rgba(115, 123, 93, 0.30)" stroke-width="0.8"/>
+        <path d="M48,47 Q40,32 50,22 Q58,32 48,47 Z" fill="rgba(115, 123, 93, 0.20)" stroke="rgba(115, 123, 93, 0.30)" stroke-width="0.8"/>
+        <path d="M62,34 Q58,18 70,12 Q74,24 62,34 Z" fill="rgba(115, 123, 93, 0.18)" stroke="rgba(115, 123, 93, 0.28)" stroke-width="0.8"/>
+        <path d="M75,22 Q78,6 88,4 Q88,16 75,22 Z" fill="rgba(115, 123, 93, 0.16)" stroke="rgba(115, 123, 93, 0.26)" stroke-width="0.8"/>
+      </svg>
+    </div>
+
+    <div class="sb-stage" id="sbStage">
+      <button class="sb-arrow left" id="sbLeft" aria-label="Previous page">
+        <svg viewBox="0 0 14 44" width="14" height="44" fill="none" aria-hidden="true">
+          <polyline points="11,3 3,22 11,41" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
+
+      <div class="sb-3d" id="sb3d">
+        <div class="sb-tilt" id="sbTilt">
+          <div class="sb-cast ambient" aria-hidden="true"></div>
+          <div class="sb-cast contact" aria-hidden="true"></div>
+          <div class="sb-cast hair" aria-hidden="true"></div>
+          <div class="sb-cast corner-left" aria-hidden="true"></div>
+          <div class="sb-cast corner-right" aria-hidden="true"></div>
+
+          <div class="sb-book" id="sbBook"></div>
+
+          <!-- Natural Inner Spine Gutter & Page Depth Overlay -->
+          <div class="sb-depth-overlay" aria-hidden="true">
+            <div class="sb-gutter-shadow"></div>
+            <div class="sb-spine-crease"></div>
+            <div class="sb-page-highlight left"></div>
+            <div class="sb-page-highlight right"></div>
+          </div>
+        </div>
+
+        <div class="zoomwrap" id="zoomWrap" aria-hidden="true">
+          <div class="zoominner" id="zoomInner"></div>
+        </div>
+
+        <div class="loupe" id="loupe">
+          <span class="grip"></span>
+          <span class="ring">
+            <span class="lens" id="loupeLens"></span>
+          </span>
+        </div>
+      </div>
+
+      <button class="sb-arrow right" id="sbRight" aria-label="Next page">
+        <svg viewBox="0 0 14 44" width="14" height="44" fill="none" aria-hidden="true">
+          <polyline points="3,3 11,22 3,41" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="sb-caption-box" id="sbCaptionBox"></div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       Livre Interactive Book Renderer
+       Authored on Meng To Sketchbook 18-Strip Curved Page Curl Architecture.
+       Integrated via postMessage protocol for PDF reading.
+       ===================================================================== */
+    (function () {
+      const N = 18;             /* strips - smooth authentic curved surface */
+      const SPAN = 0.449;       /* gutter -> outer page edge, as a fraction */
+      const BETA = 0.60;        /* peak curl of the arc, radians           */
+      const MAG = 2.3;          /* loupe magnification power               */
+      const TILT_X = 4.5, TILT_Y = 7;
+      const ZOOM_MIN = 0.8, ZOOM_MAX = 2.0;
+      const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /* State */
+      let SPREADS = [];         /* Array of { url, leftNum, rightNum, textLeft, textRight, ... } */
+      let idx = 0;              /* active spread index                     */
+      let totalSpreads = 1;
+      let totalPages = 1;
+      let isMobile = false;
+      let turn = null;          /* { dir, from, to, t }                    */
+      let strips = [];          /* strip elements for per-frame lighting   */
+
+      /* DOM elements */
+      const wrap = document.getElementById('sbWrap');
+      const stage = document.getElementById('sbStage');
+      const sb3d = document.getElementById('sb3d');
+      const book = document.getElementById('sbBook');
+      const captionBox = document.getElementById('sbCaptionBox');
+      const loupe = document.getElementById('loupe');
+      const zoomWrap = document.getElementById('zoomWrap');
+      const zoomInner = document.getElementById('zoomInner');
+      const btnLeft = document.getElementById('sbLeft');
+      const btnRight = document.getElementById('sbRight');
+
+      /* View & Loupe State */
+      const view = { rx: 0, ry: 0, z: 1, trx: 0, try_: 0, tz: 1 };
+      let viewActive = false;
+      let lastZ = 1;
+      let loupeOn = true;
+      let lx = null, ly = null, lgrab = null, lTarget = null;
+      let spring = null;
+      let raf = null, last = 0;
+      let drag = null;
+
+      function el(t, c) {
+        const e = document.createElement(t);
+        if (c) e.className = c;
+        return e;
+      }
+
+      let currentPaperMode = 'faithful';
+      function setPaperMode(mode) {
+        currentPaperMode = mode || 'faithful';
+        if (currentPaperMode === 'printed') {
+          wrap.classList.add('paper-mode-printed');
+          wrap.classList.remove('paper-mode-faithful');
+          sb3d.style.setProperty('--paper-base', '#F5EEDF');
+        } else {
+          wrap.classList.add('paper-mode-faithful');
+          wrap.classList.remove('paper-mode-printed');
+          sb3d.style.setProperty('--paper-base', '#FFFFFF');
+        }
+      }
+
+      function getSpreadUrl(i) {
+        if (SPREADS[i] && SPREADS[i].url) return SPREADS[i].url;
+        // Fallback blank canvas data URL (1x1 PNG: ivory in printed mode, white in faithful mode)
+        if (currentPaperMode === 'printed') {
+          return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8f8PwHwAFaQIdvQhS5QAAAABJRU5ErkJggg==';
+        }
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8//8/AwAI/AL+XJ/8HQAAAABJRU5ErkJggg==';
+      }
+
+      function halfEl(pos, spreadIdx) {
+        const d = el('div', 'sb-half ' + pos);
+        const im = new Image();
+        im.className = 'sb-half-img ' + pos;
+        im.draggable = false;
+        im.alt = '';
+        im.src = getSpreadUrl(spreadIdx);
+        d.appendChild(im);
+        d.appendChild(el('div', 'gutter-shade ' + pos));
+        return d;
+      }
+
+      /* Original 18-Strip Curved Surface Strip Construction */
+      function buildCurl(dir, from, to) {
+        strips = [];
+        const c = el('div', 'curl ' + dir);
+        c.style.setProperty('--n', N);
+        c.style.setProperty('--span', SPAN);
+        let host = c;
+
+        for (let i = 0; i < N; i++) {
+          const s = el('div', 'strip');
+          s.style.setProperty('--i', i);
+          const gut = 'calc(var(--bw) * 0.5)';
+          const sw = 'calc(var(--bw) * ' + SPAN + ' / ' + N + ')';
+          const A = 'calc(-1 * (' + gut + ' + ' + i + ' * ' + sw + '))';
+          const B = 'calc(' + (i + 1) + ' * ' + sw + ' - ' + gut + ')';
+
+          const f = el('div', 'face front');
+          const b = el('div', 'face back');
+
+          const dress = (e, url, px) => {
+            e.style.backgroundImage = 'url("' + url + '")';
+            e.style.backgroundPositionX = px;
+          };
+
+          dress(f, getSpreadUrl(from), dir === 'next' ? A : B);
+          dress(b, getSpreadUrl(to), dir === 'next' ? B : A);
+
+          f.appendChild(el('div', 'sh')); f.appendChild(el('div', 'gl'));
+          b.appendChild(el('div', 'sh')); b.appendChild(el('div', 'gl'));
+
+          s.appendChild(f); s.appendChild(b);
+          if (i === N - 1) s.classList.add('edge');
+          host.appendChild(s);
+          host = s;
+          strips.push(s);
+        }
+        return c;
+      }
+
+      /* Original Page Lighting and Gutter Mathematics */
+      function applyTurn(t) {
+        const th = Math.PI * t;
+        const beta = BETA * Math.sin(Math.PI * t);
+        const D = 180 / Math.PI;
+        const tt = th + beta, td = 2 * beta / N;
+
+        sb3d.style.setProperty('--tt', (tt * D).toFixed(2) + 'deg');
+        sb3d.style.setProperty('--td', (td * D).toFixed(3) + 'deg');
+        sb3d.style.setProperty('--shade', Math.sin(Math.PI * t).toFixed(3));
+
+        for (let i = 0; i < strips.length; i++) {
+          const l1 = Math.abs(Math.cos(tt - i * td));
+          const l2 = Math.abs(Math.cos(tt - (i + 1) * td));
+          const st = strips[i].style;
+          st.setProperty('--lit', l1.toFixed(3));
+          st.setProperty('--a1', ((1 - l1) * .62).toFixed(3));
+          st.setProperty('--a2', ((1 - l2) * .62).toFixed(3));
+        }
+      }
+
+      /* Text Layer Construction for Stationary Pages */
+      function renderTextLayers() {
+        const existing = book.querySelectorAll('.text-layer-host');
+        existing.forEach(e => e.remove());
+
+        if (turn !== null) return; // Hide during active turns
+
+        const spread = SPREADS[idx];
+        if (!spread) return;
+
+        if (spread.textLeftHtml || spread.textRightHtml) {
+          const host = el('div', 'text-layer-host');
+          const inner = el('div', 'text-layer-inner');
+          inner.innerHTML = (spread.textLeftHtml || '') + (spread.textRightHtml || '');
+          host.appendChild(inner);
+          book.appendChild(host);
+        }
+      }
+
+      /* Main Paint Function */
+      function paint() {
+        book.textContent = '';
+        if (!turn) {
+          const f = el('div', 'sb-full');
+          const im = new Image();
+          im.src = getSpreadUrl(idx);
+          im.draggable = false;
+          im.alt = '';
+          f.appendChild(im);
+          book.appendChild(f);
+          sb3d.style.setProperty('--shade', '0');
+
+          renderTextLayers();
+        } else {
+          const next = turn.dir === 'next';
+          book.appendChild(halfEl('left', next ? turn.from : turn.to));
+          book.appendChild(halfEl('right', next ? turn.to : turn.from));
+          book.appendChild(buildCurl(turn.dir, turn.from, turn.to));
+          applyTurn(turn.t);
+        }
+
+        const a = el('button', 'sb-zone sb-prev');
+        const b = el('button', 'sb-zone sb-next');
+        a.setAttribute('aria-label', 'Previous page');
+        b.setAttribute('aria-label', 'Next page');
+        book.appendChild(a);
+        book.appendChild(b);
+
+        layout();
+        updateCaption();
+        updateArrowStates();
+
+        if (typeof syncZoomLayer === 'function') syncZoomLayer();
+        if (typeof placeLoupe === 'function') placeLoupe();
+      }
+
+      function updateArrowStates() {
+        btnLeft.disabled = idx <= 0;
+        btnRight.disabled = idx >= totalSpreads - 1;
+      }
+
+      function updateCaption() {
+        const spread = SPREADS[idx];
+        if (!spread) {
+          captionBox.textContent = '';
+          return;
+        }
+        if (isMobile || !spread.rightNum) {
+          captionBox.textContent = 'Page ' + spread.leftNum + ' of ' + totalPages;
+        } else {
+          captionBox.textContent = 'Pages ' + spread.leftNum + ' – ' + spread.rightNum + ' of ' + totalPages;
+        }
+      }
+
+      function layout() {
+        sb3d.style.setProperty('--bw', book.clientWidth + 'px');
+        if (lx !== null && typeof clampLoupeCoords === 'function') {
+          const clamped = clampLoupeCoords(lx, ly);
+          lx = clamped.x;
+          ly = clamped.y;
+          if (typeof placeLoupe === 'function') placeLoupe();
+        }
+      }
+      addEventListener('resize', layout);
+
+      /* Animation Tick Loop */
+      function animateTo(target, onDone, stiff, damp) {
+        spring = { kind: 'spring', v: 0, target: target, done: onDone, k: stiff || 150, c: damp || 22 };
+        kick();
+      }
+
+      function tweenTo(target, dur, onDone) {
+        spring = { kind: 'tween', from: turn ? turn.t : 0, target: target, dur: dur, e: 0, done: onDone };
+        kick();
+      }
+
+      function tick(now) {
+        raf = null;
+        const dt = Math.min(0.032, (now - last) / 1000 || 0.016);
+        last = now;
+
+        if (spring && turn) {
+          const s = spring;
+          if (s.kind === 'tween') {
+            s.e += dt;
+            const k = Math.min(1, s.e / s.dur);
+            turn.t = s.from + (s.target - s.from) * k;
+            applyTurn(turn.t);
+            if (k >= 1) { spring = null; const d = s.done; d && d(); }
+          } else {
+            const x = turn.t - s.target;
+            s.v += (-s.k * x - s.c * s.v) * dt;
+            turn.t += s.v * dt;
+            if (Math.abs(turn.t - s.target) < 0.002 && Math.abs(s.v) < 0.02) {
+              turn.t = s.target;
+              spring = null;
+              applyTurn(turn.t);
+              const d = s.done; d && d();
+            } else {
+              applyTurn(turn.t);
+            }
+          }
+        }
+
+        viewSpring();
+        const lmoved = loupeEase();
+        if ((spring || viewActive || lmoved) && raf === null) {
+          raf = requestAnimationFrame(tick);
+        }
+      }
+
+      function kick() {
+        if (raf === null) {
+          last = performance.now();
+          raf = requestAnimationFrame(tick);
+        }
+      }
+
+      /* 3D Tilt & Zoom */
+      function applyView() {
+        sb3d.style.setProperty('--rx', view.rx.toFixed(2) + 'deg');
+        sb3d.style.setProperty('--ry', view.ry.toFixed(2) + 'deg');
+        sb3d.style.setProperty('--zoom', view.z.toFixed(3));
+        if (view.z !== lastZ) {
+          lastZ = view.z;
+          if (typeof placeLoupe === 'function') placeLoupe();
+        }
+      }
+
+      function viewSpring() {
+        const e = 0.14;
+        let moved = false;
+        for (const [k, t] of [['rx', 'trx'], ['ry', 'try_'], ['z', 'tz']]) {
+          const d = view[t] - view[k];
+          if (Math.abs(d) > 0.0006) { view[k] += d * e; moved = true; }
+          else view[k] = view[t];
+        }
+        if (moved) applyView();
+        viewActive = moved;
+        return moved;
+      }
+
+      function setView(rx, ry, z) {
+        view.trx = Math.max(-TILT_X, Math.min(TILT_X, rx));
+        view.try_ = Math.max(-TILT_Y, Math.min(TILT_Y, ry));
+        view.tz = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+        viewActive = true;
+        kick();
+      }
+
+      function tiltTo(cx, cy) {
+        if (drag) return;
+        const r = book.getBoundingClientRect();
+        if (!r.width) return;
+        const nx = Math.max(-1, Math.min(1, (cx - (r.left + r.width / 2)) / (r.width * 0.62)));
+        const ny = Math.max(-1, Math.min(1, (cy - (r.top + r.height / 2)) / (r.height * 0.9)));
+        setView(-ny * TILT_X, nx * TILT_Y, view.tz);
+      }
+
+      addEventListener('pointermove', e => {
+        if (e.pointerType === 'touch') return;
+        tiltTo(e.clientX, e.clientY);
+      }, { passive: true });
+
+      addEventListener('pointerout', e => {
+        if (!e.relatedTarget) setView(0, 0, view.tz);
+      });
+      addEventListener('blur', () => setView(0, 0, view.tz));
+
+      /* Pointer & Touch Page Drag Interaction */
+      function bookRect() { return book.getBoundingClientRect(); }
+
+      stage.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        const onZone = e.target.closest('.sb-zone');
+        const onText = e.target.closest('.text-layer-host');
+        if (onText && !onZone) return; // Allow text selection if clicking directly on text
+
+        const r = bookRect();
+        const dir = (e.clientX - r.left) / r.width > 0.5 ? 'next' : 'prev';
+
+        // Clamp boundary: cannot turn before first or after last
+        if ((dir === 'next' && idx >= totalSpreads - 1) || (dir === 'prev' && idx <= 0)) {
+          return;
+        }
+
+        e.preventDefault();
+        stage.setPointerCapture(e.pointerId);
+        startTurn(dir, 0);
+        drag = { dir: dir, x0: e.clientX, w: r.width, moved: 0, vel: 0, tPrev: performance.now() };
+      });
+
+      stage.addEventListener('pointermove', e => {
+        if (!drag) return;
+        const dx = e.clientX - drag.x0;
+        drag.moved = Math.max(drag.moved, Math.abs(dx));
+        const raw = (drag.dir === 'next' ? -dx : dx) / (drag.w * 0.62);
+        const t = Math.max(0, Math.min(1, raw));
+        const now = performance.now();
+        drag.vel = (t - (turn ? turn.t : 0)) / Math.max(0.001, (now - drag.tPrev) / 1000);
+        drag.tPrev = now;
+        if (turn) { turn.t = t; applyTurn(t); }
+      });
+
+      function endDrag(e) {
+        if (!drag) return;
+        const d = drag;
+        drag = null;
+        if (!turn) return;
+
+        if (d.moved < 6) { // Tap
+          commit();
+          return;
+        }
+        const go = turn.t > 0.42 || d.vel > 1.1;
+        if (go) commit();
+        else cancel();
+      }
+
+      stage.addEventListener('dragstart', e => e.preventDefault());
+      stage.addEventListener('pointerup', endDrag);
+      stage.addEventListener('pointercancel', endDrag);
+
+      /* Turn Control */
+      function startTurn(dir, t) {
+        spring = null;
+        if (turn) { idx = turn.to; turn = null; }
+
+        const from = idx;
+        const to = dir === 'next' ? Math.min(totalSpreads - 1, from + 1) : Math.max(0, from - 1);
+        if (to === from) return;
+
+        turn = { dir: dir, from: from, to: to, t: t || 0 };
+        notifyParent({ type: 'LIVRE_TURN_START', dir, fromSpread: from, toSpread: to });
+        paint();
+      }
+
+      function commit() {
+        if (!turn) return;
+        const targetIdx = turn.to;
+        if (REDUCED) {
+          idx = targetIdx;
+          turn = null;
+          paint();
+          onPageTurned();
+          return;
+        }
+        animateTo(1, () => {
+          idx = targetIdx;
+          turn = null;
+          paint();
+          onPageTurned();
+        }, 170, 26);
+        kick();
+      }
+
+      function cancel() {
+        if (!turn) return;
+        animateTo(0, () => {
+          turn = null;
+          paint();
+          notifyParent({ type: 'LIVRE_TURN_END', currentSpread: idx });
+        }, 150, 24);
+        kick();
+      }
+
+      function step(dir) {
+        if ((dir === 'next' && idx >= totalSpreads - 1) || (dir === 'prev' && idx <= 0)) {
+          return;
+        }
+        if (turn) { idx = turn.to; turn = null; }
+        startTurn(dir, 0);
+        commit();
+      }
+
+      function goTo(targetSpread) {
+        if (targetSpread < 0 || targetSpread >= totalSpreads || targetSpread === idx) return;
+        if (turn) { idx = turn.to; turn = null; }
+        if (Math.abs(targetSpread - idx) === 1) {
+          step(targetSpread > idx ? 'next' : 'prev');
+          return;
+        }
+        idx = targetSpread;
+        paint();
+        onPageTurned();
+      }
+
+      function onPageTurned() {
+        const cur = SPREADS[idx];
+        notifyParent({
+          type: 'LIVRE_PAGE_CHANGED',
+          currentSpread: idx,
+          currentPageLeft: cur ? cur.leftNum : 1,
+          currentPageRight: cur ? cur.rightNum : null
+        });
+      }
+
+      btnLeft.onclick = () => step('prev');
+      btnRight.onclick = () => step('next');
+
+      addEventListener('keydown', e => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        e.preventDefault();
+        step(e.key === 'ArrowRight' ? 'next' : 'prev');
+      });
+
+      /* Loupe Magnifier Implementation — Antique Brass & Walnut Instrument (Reference 2) */
+      function loupeSize() {
+        return Math.round(Math.max(120, Math.min(165, book.clientWidth * 0.18)));
+      }
+      function bookBox() {
+        return { x: 0, y: 0, w: book.clientWidth, h: book.clientHeight };
+      }
+
+      function stageBox() {
+        const s = stage.getBoundingClientRect();
+        const b = sb3d.getBoundingClientRect();
+        if (!s.width || !b.width) {
+          const bw = book.clientWidth || 800;
+          const bh = book.clientHeight || 560;
+          return {
+            minX: -bw * 0.45,
+            maxX: bw * 1.45,
+            minY: -bh * 0.35,
+            maxY: bh * 1.35
+          };
+        }
+        return {
+          minX: s.left - b.left,
+          maxX: s.right - b.left,
+          minY: s.top - b.top,
+          maxY: s.bottom - b.top
+        };
+      }
+
+      /* Clamping bounds allow dragging freely outside the book across the entire stage/desk */
+      function clampLoupeCoords(x, y) {
+        const R = loupeSize() / 2;
+        const s = stageBox();
+        // Keep lens and turned handle visible within the stage viewport
+        const minX = s.minX + R;
+        const maxX = s.maxX - R * 1.25;
+        const minY = s.minY + R;
+        const maxY = s.maxY - R * 1.25;
+        return {
+          x: Math.max(minX, Math.min(maxX, x)),
+          y: Math.max(minY, Math.min(maxY, y))
+        };
+      }
+
+      function restLoupe() {
+        const b = bookBox();
+        const R = loupeSize() / 2;
+        // Position rests gracefully in the bottom-right corner of the right page (Reference 2)
+        const targetX = b.x + b.w - R * 1.25;
+        const targetY = b.y + b.h - R * 1.25;
+        const clamped = clampLoupeCoords(targetX, targetY);
+        lx = clamped.x;
+        ly = clamped.y;
+        placeLoupe();
+      }
+
+      function syncZoomLayer() {
+        zoomInner.textContent = '';
+        for (const c of book.children) {
+          // Hit zones and text layers are omitted so magnifier shows pure visual artwork
+          if (c.classList.contains('sb-zone') || c.classList.contains('text-layer-host')) continue;
+          zoomInner.appendChild(c.cloneNode(true));
+        }
+      }
+
+      function placeLoupe() {
+        if (lx === null) return;
+        const B = bookBox(), bw = B.w, bh = B.h;
+        if (!bw || !bh) return;
+        const R = loupeSize() / 2, bez = R * 2 * 0.058;
+        loupe.style.setProperty('--lr', (R * 2) + 'px');
+        loupe.style.transform = 'translate3d(' + (lx - R).toFixed(1) + 'px,' + (ly - R).toFixed(1) + 'px,0)';
+        if (loupeOn) loupe.classList.add('on');
+
+        const z = view.z, cx = bw / 2, cy = bh / 2;
+
+        // Lens magnification is always fully active when loupe is on
+        zoomWrap.style.opacity = (loupeOn ? 1 : 0);
+        if (!loupeOn) return;
+
+        const r = (R - bez).toFixed(1);
+        const mask = 'radial-gradient(circle ' + r + 'px at ' + lx.toFixed(1) + 'px ' + ly.toFixed(1) + 'px,#000 calc(100% - 1px),transparent 100%)';
+        zoomWrap.style.webkitMaskImage = mask;
+        zoomWrap.style.maskImage = mask;
+
+        const px = cx + (lx - cx) / z, py = cy + (ly - cy) / z, s = MAG * z;
+        zoomInner.style.transform = 'translate(' + (lx - px * s).toFixed(1) + 'px,' + (ly - py * s).toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
+      }
+
+      function loupeEase() {
+        if (!lTarget) return false;
+        if (lgrab) { lTarget = null; return false; }
+        const dx = lTarget.x - lx, dy = lTarget.y - ly;
+        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+          lx = lTarget.x; ly = lTarget.y; lTarget = null;
+          placeLoupe();
+          return false;
+        }
+        lx += dx * 0.17; ly += dy * 0.17;
+        placeLoupe();
+        return true;
+      }
+
+      loupe.addEventListener('pointerdown', e => {
+        if (!loupeOn || e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation();
+        lTarget = null;
+        lgrab = { cx: e.clientX, cy: e.clientY, lx0: lx, ly0: ly };
+        loupe.classList.add('held');
+        loupe.setPointerCapture(e.pointerId);
+      });
+
+      loupe.addEventListener('pointermove', e => {
+        if (!lgrab) return;
+        const targetX = lgrab.lx0 + (e.clientX - lgrab.cx);
+        const targetY = lgrab.ly0 + (e.clientY - lgrab.cy);
+        const clamped = clampLoupeCoords(targetX, targetY);
+        lx = clamped.x;
+        ly = clamped.y;
+        placeLoupe();
+      });
+
+      function dropLoupe() {
+        lgrab = null;
+        loupe.classList.remove('held');
+      }
+      loupe.addEventListener('pointerup', dropLoupe);
+      loupe.addEventListener('pointercancel', dropLoupe);
+
+      /* PostMessage Protocol with React Host */
+      function notifyParent(data) {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(data, window.location.origin);
+        }
+      }
+
+      window.addEventListener('message', e => {
+        if (e.origin !== window.location.origin) return;
+        const data = e.data;
+        if (!data || typeof data.type !== 'string') return;
+
+        switch (data.type) {
+          case 'LIVRE_INIT': {
+            totalPages = data.totalPages || 1;
+            totalSpreads = data.totalSpreads || 1;
+            isMobile = !!data.isMobile;
+            wrap.classList.toggle('is-mobile', isMobile);
+            idx = Math.max(0, Math.min(totalSpreads - 1, data.initialSpread || 0));
+            paint();
+            applyView();
+            restLoupe();
+            break;
+          }
+          case 'LIVRE_SET_SPREAD': {
+            const spreadIndex = data.spreadIndex;
+            SPREADS[spreadIndex] = {
+              url: data.spreadUrl,
+              leftNum: data.leftNum,
+              rightNum: data.rightNum,
+              textLeftHtml: data.textLeftHtml || '',
+              textRightHtml: data.textRightHtml || '',
+            };
+            // If current or active turn touches this spread, repaint
+            if (idx === spreadIndex || (turn && (turn.from === spreadIndex || turn.to === spreadIndex))) {
+              paint();
+            }
+            break;
+          }
+          case 'LIVRE_EVICT_SPREAD': {
+            const spreadIndex = data.spreadIndex;
+            if (spreadIndex !== undefined && SPREADS[spreadIndex] && idx !== spreadIndex) {
+              delete SPREADS[spreadIndex];
+            }
+            break;
+          }
+          case 'LIVRE_NAVIGATE': {
+            if (data.direction === 'next') step('next');
+            else if (data.direction === 'prev') step('prev');
+            else if (typeof data.targetSpread === 'number') goTo(data.targetSpread);
+            break;
+          }
+          case 'LIVRE_SET_ZOOM': {
+            setView(view.trx, view.try_, data.zoom);
+            break;
+          }
+          case 'LIVRE_TOGGLE_LOUPE': {
+            loupeOn = typeof data.enabled === 'boolean' ? data.enabled : !loupeOn;
+            loupe.classList.toggle('on', loupeOn);
+            if (loupeOn && lx === null) restLoupe();
+            placeLoupe();
+            break;
+          }
+          case 'LIVRE_SET_PAPER_MODE': {
+            setPaperMode(data.mode);
+            paint();
+            break;
+          }
+        }
+      });
+
+      // Signal to React host that renderer iframe is mounted and ready
+      notifyParent({ type: 'LIVRE_READY' });
+    })();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,112 @@
+/* ------------------------------------------------------------------ */
+/*  LIVRE DESIGN SYSTEM — MOTION & INTERACTION (Phase 1)              */
+/*  Deliberate · Tactile · Context-Aware · Accessible                 */
+/* ------------------------------------------------------------------ */
+
+/* Base Micro-Transitions */
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) var(--ease-enter) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--duration-normal) var(--ease-enter) forwards;
+}
+
+/* Subtle Popover & Menu Appearances */
+.popover-enter {
+  opacity: 0;
+  transform: scale(0.96) translateY(-4px);
+  transform-origin: top right;
+  transition: opacity var(--duration-normal) var(--ease-enter),
+              transform var(--duration-normal) var(--ease-enter);
+}
+
+.popover-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Drawer / Sheet Transitions */
+.drawer-enter {
+  transform: translateX(100%);
+  transition: transform var(--duration-drawer) var(--ease-enter);
+}
+
+.drawer-enter-active {
+  transform: translateX(0);
+}
+
+.drawer-exit {
+  transform: translateX(0);
+  transition: transform calc(var(--duration-drawer) * 0.75) var(--ease-exit);
+}
+
+.drawer-exit-active {
+  transform: translateX(100%);
+}
+
+/* Reusable Interactive Button Motion */
+.btn-tactile {
+  transition: background-color var(--duration-fast) var(--ease-enter),
+              border-color var(--duration-fast) var(--ease-enter),
+              color var(--duration-fast) var(--ease-enter),
+              transform var(--duration-fast) var(--ease-enter),
+              box-shadow var(--duration-fast) var(--ease-enter);
+}
+
+.btn-tactile:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes gentlePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  ACCESSIBILITY: PREFERS-REDUCED-MOTION                             */
+/*  Respect users who prefer minimized motion or suffer from vertigo   */
+/* ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover-elevate:hover {
+    transform: none !important;
+  }
+
+  .btn-tactile:active {
+    transform: none !important;
+  }
+}
