@@ -32,12 +32,9 @@ import {
 } from '../icons/Icons';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import '../styles/reader.css';
+import { initPdfWorker } from '../pdf/pdfWorkerInit';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+initPdfWorker();
 
 /* ------------------------------------------------------------------ */
 /*  Simple LRU page cache for Flat Viewer mode                        */
@@ -131,6 +128,7 @@ const ReaderPage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cacheRef = useRef<PageCache>(new PageCache(5));
   const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
+  const loadingTaskRef = useRef<pdfjsLib.PDFDocumentLoadingTask | null>(null);
   const textLayerRef = useRef<pdfjsLib.TextLayer | null>(null);
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
   const searchServiceRef = useRef<DocumentSearchService | null>(null);
@@ -159,11 +157,15 @@ const ReaderPage: React.FC = () => {
         setBook(b);
 
         const arrayBuffer = await b.fileBlob.arrayBuffer();
+        if (cancelled) return;
+
         const loadingTask = pdfjsLib.getDocument({
           data: new Uint8Array(arrayBuffer),
           isEvalSupported: false,
         });
+        loadingTaskRef.current = loadingTask;
         const pdf = await loadingTask.promise;
+        loadingTaskRef.current = null;
         if (cancelled) {
           pdf.destroy();
           return;
@@ -204,6 +206,12 @@ const ReaderPage: React.FC = () => {
 
     return () => {
       cancelled = true;
+      if (loadingTaskRef.current) {
+        try {
+          loadingTaskRef.current.destroy();
+        } catch {}
+        loadingTaskRef.current = null;
+      }
       if (progressDebounceTimerRef.current) {
         clearTimeout(progressDebounceTimerRef.current);
       }

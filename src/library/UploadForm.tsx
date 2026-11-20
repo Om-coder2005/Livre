@@ -2,12 +2,10 @@ import React, { useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { LivreBook } from '../persistence/types';
 import { IconHourglass, IconUploadTray, IconDocument, IconWarning, IconCheck } from '../icons/Icons';
+import { initPdfWorker } from '../pdf/pdfWorkerInit';
+import { validatePdfFile, sanitizeMetadataString } from '../upload/pdfSecurity';
 
-// Configure the PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+initPdfWorker();
 
 type UploadFormProps = {
   onUpload: (book: LivreBook) => Promise<void>;
@@ -22,16 +20,9 @@ const UploadForm: React.FC<UploadFormProps> = ({ onUpload }) => {
   const [isDragging, setIsDragging] = useState(false);
 
   const processFile = async (file: File) => {
-    // Validate MIME type and extension
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      setStatus('Please select a valid PDF file (.pdf).');
-      setIsError(true);
-      return;
-    }
-
-    // Validate file size
-    if (file.size === 0) {
-      setStatus('The selected file is empty (0 bytes).');
+    const validation = await validatePdfFile(file);
+    if (!validation.valid) {
+      setStatus(validation.error || 'Please select a valid PDF file.');
       setIsError(true);
       return;
     }
@@ -77,12 +68,11 @@ const UploadForm: React.FC<UploadFormProps> = ({ onUpload }) => {
         const meta: any = await Promise.race([metaPromise, timeoutPromise]);
         if (meta?.info) {
           const info = meta.info as Record<string, any>;
-          if (info?.Title && typeof info.Title === 'string' && info.Title.trim()) {
-            title = info.Title.trim();
+          const cleanTitle = sanitizeMetadataString(info?.Title, 250);
+          if (cleanTitle) {
+            title = cleanTitle;
           }
-          if (info?.Author && typeof info.Author === 'string' && info.Author.trim()) {
-            author = info.Author.trim();
-          }
+          author = sanitizeMetadataString(info?.Author, 150);
         }
       } catch {
         // Fallback to filename title if metadata is unreadable

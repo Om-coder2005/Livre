@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { MAX_FILE_SIZE_BYTES } from './types';
+import { validatePdfFile } from './pdfSecurity';
 import { IconWarning, IconClose } from '../icons/Icons';
 
 interface PDFDropZoneProps {
@@ -21,30 +22,14 @@ export const PDFDropZone: React.FC<PDFDropZoneProps> = ({
 
   const displayError = errorMessage || localError;
 
-  const validateAndAccept = (file: File) => {
+  const validateAndAccept = async (file: File) => {
     if (disabled) return;
     setLocalError(null);
     if (onClearError) onClearError();
 
-    // 1. Validate file extension and MIME type
-    const isPdfExt = file.name.toLowerCase().endsWith('.pdf');
-    const isPdfMime = file.type === 'application/pdf' || file.type === '';
-
-    if (!isPdfExt || !isPdfMime) {
-      setLocalError('Please choose a valid PDF document (.pdf).');
-      return;
-    }
-
-    // 2. Validate empty file
-    if (file.size === 0) {
-      setLocalError('The selected file is empty (0 bytes).');
-      return;
-    }
-
-    // 3. Validate maximum file size (50 MB)
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      setLocalError(`File size (${sizeMB} MB) exceeds the 50 MB limit. Please select a smaller PDF.`);
+    const result = await validatePdfFile(file);
+    if (!result.valid) {
+      setLocalError(result.error || 'Please choose a valid PDF document.');
       return;
     }
 

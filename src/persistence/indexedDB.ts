@@ -200,12 +200,13 @@ export async function deleteBookmark(bookmarkId: string): Promise<void> {
 export async function deleteBookmarkByPage(bookId: string, pageNum: number): Promise<void> {
   try {
     const db = await getDB();
-    const bookmarks = await getBookmarks(bookId);
-    for (const bm of bookmarks) {
-      if (bm.pageNum === pageNum) {
-        await db.delete(BOOKMARK_STORE, bm.id);
-      }
+    const tx = db.transaction(BOOKMARK_STORE, 'readwrite');
+    const index = tx.store.index('by-bookId-page');
+    const matchingBookmarks = await index.getAll(IDBKeyRange.only([bookId, pageNum]));
+    for (const bm of matchingBookmarks) {
+      await tx.store.delete(bm.id);
     }
+    await tx.done;
   } catch (err) {
     console.error(`Failed to remove bookmark on page ${pageNum}:`, err);
   }

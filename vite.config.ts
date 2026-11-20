@@ -11,6 +11,15 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-pdfjs': ['pdfjs-dist'],
+          'vendor-idb': ['idb'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,

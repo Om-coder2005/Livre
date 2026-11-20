@@ -14,12 +14,9 @@ import { LivreBook, BookProgress } from '../persistence/types';
 import UploadForm from './UploadForm';
 import { BookCard } from './BookCard';
 import { IconBooks, IconClose } from '../icons/Icons';
+import { initPdfWorker } from '../pdf/pdfWorkerInit';
 
-// Configure PDF.js worker for lazy thumbnail generation if needed
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+initPdfWorker();
 
 const LibraryPage: React.FC = () => {
   const [books, setBooks] = useState<LivreBook[]>([]);

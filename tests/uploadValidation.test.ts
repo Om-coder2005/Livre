@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_FILE_SIZE_BYTES } from '../src/upload/types';
+import { validatePdfFile, sanitizeMetadataString, sanitizeTextLayerHtml } from '../src/upload/pdfSecurity';
 
 function validateFile(name: string, size: number, type: string): { valid: boolean; error?: string } {
   const isPdfExt = name.toLowerCase().endsWith('.pdf');
@@ -43,6 +44,14 @@ test('Upload Validation - rejects non-PDF files', () => {
 
   const res2 = validateFile('image.png', 5000, 'image/png');
   assert.equal(res2.valid, false);
+
+  // Misleading extension with malicious MIME
+  const res3 = validateFile('executable.exe', 5000, 'application/pdf');
+  assert.equal(res3.valid, false);
+
+  // PDF extension with binary executable MIME
+  const res4 = validateFile('malicious.pdf', 5000, 'application/x-msdownload');
+  assert.equal(res4.valid, false);
 });
 
 test('Upload Validation - rejects files exceeding 50 MB limit', () => {
@@ -80,4 +89,45 @@ test('Upload Processing - generates valid LivreBook with sanitized title and pag
   assert.equal(book.pageCount, 1589);
   assert.ok(book.fileBlob.size > 0);
   assert.ok(book.id.length > 0);
+});
+
+test('PDF Security - validatePdfFile checks magic bytes (%PDF-)', async () => {
+  // Valid PDF header
+  const validHeader = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+  const validBlob = new Blob([validHeader], { type: 'application/pdf' });
+  const validFile = new File([validBlob], 'valid.pdf', { type: 'application/pdf' });
+  const validRes = await validatePdfFile(validFile);
+  assert.equal(validRes.valid, true);
+
+  // Invalid header (e.g. text/html file masquerading as PDF)
+  const fakeHeader = new TextEncoder().encode('<html><body>not a pdf</body></html>');
+  const fakeBlob = new Blob([fakeHeader], { type: 'application/pdf' });
+  const fakeFile = new File([fakeBlob], 'fake.pdf', { type: 'application/pdf' });
+  const fakeRes = await validatePdfFile(fakeFile);
+  assert.equal(fakeRes.valid, false);
+  assert.ok(fakeRes.error?.includes('header signature'));
+});
+
+test('PDF Security - sanitizeMetadataString strips control characters and limits length', () => {
+  const dirtyTitle = 'War \x00and \x1FPeace\x7F with \tControl Chars';
+  const clean = sanitizeMetadataString(dirtyTitle, 20);
+  assert.equal(clean, 'War  and  Peace  wit');
+
+  // Length clamping
+  const longAuthor = 'A'.repeat(300);
+  const clamped = sanitizeMetadataString(longAuthor, 150);
+  assert.equal(clamped?.length, 150);
+
+  // Non-string or empty input
+  assert.equal(sanitizeMetadataString(null), undefined);
+  assert.equal(sanitizeMetadataString('   '), undefined);
+});
+
+test('PDF Security - sanitizeTextLayerHtml strips malicious HTML and event handlers', () => {
+  const malicious = '<span class="c">Safe Text</span><script>alert("xss")</script><img src="x" onerror="stealCookie()"><iframe src="evil.com"></iframe>';
+  const clean = sanitizeTextLayerHtml(malicious);
+  assert.ok(!clean.includes('<script>'));
+  assert.ok(!clean.includes('onerror'));
+  assert.ok(!clean.includes('<iframe>'));
+  assert.ok(clean.includes('Safe Text'));
 });

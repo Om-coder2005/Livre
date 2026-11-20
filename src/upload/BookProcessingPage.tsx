@@ -5,12 +5,10 @@ import { addBook } from '../persistence/indexedDB';
 import { LivreBook } from '../persistence/types';
 import { ProcessingBookAnimation } from './ProcessingBookAnimation';
 import { ProcessingStatus } from './types';
+import { initPdfWorker } from '../pdf/pdfWorkerInit';
+import { validatePdfFile, sanitizeMetadataString } from './pdfSecurity';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
+initPdfWorker();
 
 interface BookProcessingPageProps {
   file: File;
@@ -43,6 +41,12 @@ export const BookProcessingPage: React.FC<BookProcessingPageProps> = ({
 
     const processBook = async () => {
       try {
+        // Stage 0: Header & Size Security Validation
+        const validation = await validatePdfFile(file);
+        if (!validation.valid) {
+          throw new Error(validation.error || 'The uploaded file is not a valid PDF document.');
+        }
+
         // Stage 1 & 2: Load PDF directly from memory buffer
         setStatus({
           stage: 'opening',
@@ -100,12 +104,11 @@ export const BookProcessingPage: React.FC<BookProcessingPageProps> = ({
           const meta: any = await Promise.race([metaPromise, timeoutPromise]);
           if (meta?.info) {
             const info = meta.info as Record<string, any>;
-            if (info?.Title && typeof info.Title === 'string' && info.Title.trim()) {
-              title = info.Title.trim();
+            const cleanTitle = sanitizeMetadataString(info?.Title, 250);
+            if (cleanTitle) {
+              title = cleanTitle;
             }
-            if (info?.Author && typeof info.Author === 'string' && info.Author.trim()) {
-              author = info.Author.trim();
-            }
+            author = sanitizeMetadataString(info?.Author, 150);
           }
         } catch {
           // Fallback to sanitized filename

@@ -1,4 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import { sanitizeTextLayerHtml } from '../upload/pdfSecurity';
 
 export interface RenderedSpread {
   spreadIndex: number;
@@ -646,7 +647,8 @@ export class SpreadRendererService {
         const pctWidth = ((renderW / spreadW) * 100).toFixed(3);
         const pctHeight = ((renderH / spreadH) * 100).toFixed(3);
 
-        textHtml = `<div style="position:absolute;left:${pctLeft}%;top:${pctTop}%;width:${pctWidth}%;height:${pctHeight}%;overflow:hidden;pointer-events:auto;">${textContainer.innerHTML}</div>`;
+        const sanitizedInner = sanitizeTextLayerHtml(textContainer.innerHTML);
+        textHtml = `<div style="position:absolute;left:${pctLeft}%;top:${pctTop}%;width:${pctWidth}%;height:${pctHeight}%;overflow:hidden;pointer-events:auto;">${sanitizedInner}</div>`;
       }
     } catch (e) {
       console.warn(`Text layer generation failed for page ${pageNum}:`, e);
